@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/the-att-21/rssagg/internal/auth"
 	"github.com/the-att-21/rssagg/internal/database"
 )
 
@@ -38,18 +37,20 @@ func (apiCnf *apiConfig) handlerCreateUser(w http.ResponseWriter, r *http.Reques
 	respondWithJSON(w, 200, databaseUsertoUser(user))
 }
 
-func (apiCnf *apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request) {
-	apiKey, err := auth.GetAPIKey(r.Header)
-	if err != nil {
-		respondWithError(w, 403, fmt.Sprintf("Auth error : %v", err))
-		return
-	}
-
-	user, err := apiCnf.DB.GetUserByAPIKey(r.Context(), apiKey)
-	if err != nil {
-		respondWithError(w, 403, fmt.Sprintf("User not found : %v", err))
-		return
-	}
-
+func (apiCnf *apiConfig) handlerGetUser(w http.ResponseWriter, r *http.Request, user database.User) {
 	respondWithJSON(w, 200, databaseUsertoUser(user))
+}
+
+func (apiCnf *apiConfig) handlerGetPostForUser(w http.ResponseWriter, r *http.Request, user database.User) {
+	posts, err := apiCnf.DB.GetPostsForUser(r.Context(), database.GetPostsForUserParams{
+		UsersID: user.ID,
+		Limit:  10,
+	})
+
+	if err != nil {
+		respondWithError(w, 400, fmt.Sprintf("Error getting posts: %v", err))
+		return
+	}
+
+	respondWithJSON(w, 200, databasePoststoPosts(posts))
 }

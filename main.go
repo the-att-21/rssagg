@@ -43,6 +43,8 @@ func main() {
 		DB: database.New(db),
 	}
 
+	go startScraping(apiCnf.DB, 10, 10)
+
 	router := chi.NewRouter()
 
 	router.Use(cors.Handler(cors.Options{
@@ -57,8 +59,18 @@ func main() {
 	v1Router := chi.NewRouter()
 	v1Router.Get("/healthz", handlerReadiness)
 	v1Router.Get("/error", handlerErr)
+
 	v1Router.Post("/users", apiCnf.handlerCreateUser)
-	v1Router.Get("/users", apiCnf.handlerGetUser)
+	v1Router.Get("/users", apiCnf.middlewareAuth(apiCnf.handlerGetUser))
+
+	v1Router.Post("/feeds", apiCnf.middlewareAuth(apiCnf.handlerCreateFeed))
+	v1Router.Get("/feeds", apiCnf.handlerGetFeeds)
+
+	v1Router.Post("/feed_follows", apiCnf.middlewareAuth(apiCnf.handlerCreateFeedFollows))
+	v1Router.Get("/feed_follows", apiCnf.middlewareAuth(apiCnf.handlerGetFeedFollows))
+	v1Router.Delete("/feed_follows/{feedFollowID}", apiCnf.middlewareAuth(apiCnf.handlerDeleteFeedFollows))
+
+	v1Router.Get("/posts", apiCnf.middlewareAuth(apiCnf.handlerGetPostForUser))
 
 	router.Mount("/v1", v1Router)
 
